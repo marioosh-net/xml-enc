@@ -1,6 +1,7 @@
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
@@ -23,6 +24,7 @@ import org.apache.xml.security.encryption.EncryptedKey;
 import org.apache.xml.security.encryption.XMLCipher;
 import org.apache.xml.security.keys.KeyInfo;
 import org.apache.xml.security.utils.Base64;
+import org.bouncycastle.openssl.PEMWriter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -78,6 +80,10 @@ public class EncryptTool
 		ObjectOutput out = new ObjectOutputStream(new FileOutputStream("c:\\moje\\download\\xml-enc\\private.key"));
 		out.writeObject(p.getPrivate());
 		out.close();
+		
+		PEMWriter pw = new PEMWriter(new FileWriter("c:\\moje\\download\\xml-enc\\private.key.pem"));
+		pw.writeObject(p.getPrivate());
+		pw.close();
 		
 	   return p.getPublic();
       /*
