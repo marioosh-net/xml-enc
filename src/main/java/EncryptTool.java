@@ -13,13 +13,11 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.apache.xml.security.encryption.EncryptedData;
 import org.apache.xml.security.encryption.EncryptedKey;
 import org.apache.xml.security.encryption.XMLCipher;
 import org.apache.xml.security.keys.KeyInfo;
-import org.bouncycastle.util.encoders.Base64;
+import org.apache.xml.security.utils.Base64;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -133,8 +131,6 @@ public class EncryptTool
    public static void main(String args[])
       throws Exception
    {
-	   
-	   Logger.getRootLogger().setLevel(Level.INFO);
 	   
       if (args.length < 2)
       {
