@@ -4,6 +4,36 @@
 	<groupId>net.marioosh</groupId>
 	<artifactId>xml-enc</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+	
+	<build>
+		<finalName>xml-enc</finalName>
+		<plugins>
+			<plugin>
+				<artifactId>maven-clean-plugin</artifactId>
+				<configuration>
+					<failOnError>false</failOnError>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+					<archive>
+						<manifest>
+						</manifest>
+					</archive>
+					<appendAssemblyId>false</appendAssemblyId>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
 	<dependencies>
 
 		<dependency>
@@ -17,6 +47,6 @@
 			<artifactId>xmlsec</artifactId>
 			<version>1.5.2</version>
 		</dependency>
-		
+
 	</dependencies>
 </project>
