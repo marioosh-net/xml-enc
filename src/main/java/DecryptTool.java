@@ -1,7 +1,10 @@
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
 import java.security.Key;
+import java.security.PrivateKey;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.DESedeKeySpec;
@@ -56,7 +59,15 @@ public class DecryptTool {
 		return document;
 	}
 
-	private static SecretKey loadKeyEncryptionKey() throws Exception {
+	private static Key loadKeyEncryptionKey() throws Exception {
+		
+		ObjectInputStream in = new ObjectInputStream(new FileInputStream("c:\\moje\\download\\xml-enc\\private.key"));
+		Object o = in.readObject();
+		in.close();
+		PrivateKey k = (PrivateKey) o;
+		return k;
+
+		/*
 		String fileName = "keyEncryptKey";
 		String jceAlgorithmName = "DESede";
 
@@ -68,6 +79,7 @@ public class DecryptTool {
 
 		System.out.println("Key encryption key loaded from: " + kekFile.toURL().toString());
 		return key;
+		*/
 	}
 
 	private static void writeDecryptedDocToFile(Document doc, String fileName)

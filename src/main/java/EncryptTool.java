@@ -2,7 +2,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.xml.parsers.DocumentBuilder;
@@ -64,15 +69,25 @@ public class EncryptTool
       return document;
    }
 
-   private static SecretKey GenerateKeyEncryptionKey()
+   private static Key GenerateKeyEncryptionKey()
       throws Exception
    {
-      String jceAlgorithmName = "DESede";
+	   KeyPairGenerator g = KeyPairGenerator.getInstance("RSA");
+	   KeyPair p = g.generateKeyPair();
+	   
+		ObjectOutput out = new ObjectOutputStream(new FileOutputStream("c:\\moje\\download\\xml-enc\\private.key"));
+		out.writeObject(p.getPrivate());
+		out.close();
+		
+	   return p.getPublic();
+      /*
+	   String jceAlgorithmName = "DESede";
       KeyGenerator keyGenerator =
          KeyGenerator.getInstance(jceAlgorithmName);
       SecretKey keyEncryptKey = keyGenerator.generateKey();
 
       return keyEncryptKey;
+      */
    }
 
    private static void storeKeyFile(Key keyEncryptKey)
@@ -154,7 +169,7 @@ public class EncryptTool
 
       // initialize cipher
       XMLCipher keyCipher =
-         XMLCipher.getInstance(XMLCipher.TRIPLEDES_KeyWrap);
+         XMLCipher.getInstance(XMLCipher.RSA_OAEP);
       keyCipher.init(XMLCipher.WRAP_MODE, keyEncryptKey);
 
       // encrypt symmetric key
