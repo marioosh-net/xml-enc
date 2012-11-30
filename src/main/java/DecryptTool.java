@@ -2,9 +2,12 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.ObjectInputStream;
 import java.security.Key;
+import java.security.KeyPair;
 import java.security.PrivateKey;
+import java.security.Security;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.DESedeKeySpec;
@@ -13,6 +16,7 @@ import org.apache.xml.security.encryption.XMLCipher;
 import org.apache.xml.security.utils.JavaUtils;
 import org.apache.xml.security.utils.EncryptionConstants;
 import org.apache.xml.security.utils.Base64;
+import org.bouncycastle.openssl.PEMReader;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -60,26 +64,11 @@ public class DecryptTool {
 	}
 
 	private static Key loadKeyEncryptionKey() throws Exception {
-		
-		ObjectInputStream in = new ObjectInputStream(new FileInputStream("c:\\moje\\download\\xml-enc\\private.key"));
-		Object o = in.readObject();
-		in.close();
-		PrivateKey k = (PrivateKey) o;
-		return k;
-
-		/*
-		String fileName = "keyEncryptKey";
-		String jceAlgorithmName = "DESede";
-
-		File kekFile = new File(fileName);
-
-		DESedeKeySpec keySpec = new DESedeKeySpec(JavaUtils.getBytesFromFile(fileName));
-		SecretKeyFactory skf = SecretKeyFactory.getInstance(jceAlgorithmName);
-		SecretKey key = skf.generateSecret(keySpec);
-
-		System.out.println("Key encryption key loaded from: " + kekFile.toURL().toString());
-		return key;
-		*/
+		Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+		PEMReader pr = new PEMReader(new FileReader(EncryptTool.PRIVATE_KEY));
+		KeyPair k = (KeyPair) pr.readObject();
+		pr.close();
+		return k.getPrivate();
 	}
 
 	private static void writeDecryptedDocToFile(Document doc, String fileName)
@@ -138,17 +127,16 @@ public class DecryptTool {
 
 	}
 
+	/**
+	 * wyciaga z xml noda <binary> i zamienia jego zawartosc z base64 na plik binarny INLINE 
+	 * @param file - plik xml
+	 * @throws Exception
+	 */
 	private static void saveBinaryFromXmlToFile(String file) throws Exception {
-
 		javax.xml.parsers.DocumentBuilderFactory dbf = javax.xml.parsers.DocumentBuilderFactory.newInstance();
 		dbf.setNamespaceAware(true);
 		javax.xml.parsers.DocumentBuilder db = dbf.newDocumentBuilder();
-		Document document = db.parse(file);
-		NodeList l = document.getElementsByTagName("binary");
-		Element element = (Element) l.item(0);
-		String base64 = element.getTextContent();
-		System.out.println(base64);
-		IOUtils.copy(new ByteArrayInputStream(Base64.decode(base64)), new FileOutputStream(file));
+		IOUtils.copy(new ByteArrayInputStream(Base64.decode(((Element)db.parse(file).getElementsByTagName("binary").item(0)).getTextContent())), new FileOutputStream(file));
 
 	}
 }

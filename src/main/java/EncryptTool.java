@@ -37,196 +37,143 @@ import org.w3c.dom.Element;
  * symmetric keys for the following purposes:
  * 1) to encrypt the actual XML-file data
  * 2) to encrypt the key used to encrypt the XML-file data
- *
+ * 
  * The encrypted data is written to disk and the key used to encrypt the
  * data-encryption key is also stored to disk.
- *
+ * 
  * @author <a href="mailto:jeff@jeffhanson.com">Jeff Hanson</a>
  * @version $Revision: 1.1 $
  *          <p/>
- *          <p><b>Revisions:</b>
+ *          <p>
+ *          <b>Revisions:</b>
  *          <p/>
- *          <p><b>Jul 6, 2005 jhanson:</b>
+ *          <p>
+ *          <b>Jul 6, 2005 jhanson:</b>
  *          <ul>
- *          <li> Created file.
+ *          <li>Created file.
  *          </ul>
  */
 
-public class EncryptTool
-{
-   static
-   {
-      org.apache.xml.security.Init.init();
-   }
+public class EncryptTool {
 
-   private static Document parseFile(String fileName)
-      throws Exception
-   {
-      javax.xml.parsers.DocumentBuilderFactory dbf =
-         javax.xml.parsers.DocumentBuilderFactory.newInstance();
-      dbf.setNamespaceAware(true);
-      javax.xml.parsers.DocumentBuilder db = dbf.newDocumentBuilder();
-      Document document = db.parse(fileName);
+	public static String PRIVATE_KEY = "private.pem";
+	
+	static {
+		org.apache.xml.security.Init.init();
+	}
 
-      return document;
-   }
+	private static Document parseFile(String fileName) throws Exception {
+		javax.xml.parsers.DocumentBuilderFactory dbf = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+		dbf.setNamespaceAware(true);
+		javax.xml.parsers.DocumentBuilder db = dbf.newDocumentBuilder();
+		Document document = db.parse(fileName);
 
-   private static Key GenerateKeyEncryptionKey()
-      throws Exception
-   {
-	   KeyPairGenerator g = KeyPairGenerator.getInstance("RSA");
-	   KeyPair p = g.generateKeyPair();
-	   
-		ObjectOutput out = new ObjectOutputStream(new FileOutputStream("c:\\moje\\download\\xml-enc\\private.key"));
-		out.writeObject(p.getPrivate());
-		out.close();
-		
-		PEMWriter pw = new PEMWriter(new FileWriter("c:\\moje\\download\\xml-enc\\private.key.pem"));
+		return document;
+	}
+
+	private static Key GenerateKeyEncryptionKey() throws Exception {
+		KeyPairGenerator g = KeyPairGenerator.getInstance("RSA");
+		KeyPair p = g.generateKeyPair();
+		File pk = new File(PRIVATE_KEY);
+		PEMWriter pw = new PEMWriter(new FileWriter(pk));
 		pw.writeObject(p.getPrivate());
 		pw.close();
-		
-	   return p.getPublic();
-      /*
-	   String jceAlgorithmName = "DESede";
-      KeyGenerator keyGenerator =
-         KeyGenerator.getInstance(jceAlgorithmName);
-      SecretKey keyEncryptKey = keyGenerator.generateKey();
+		System.out.println("Private Key stored in: " + pk.toURL().toString());		
+		return p.getPublic();
+	}
 
-      return keyEncryptKey;
-      */
-   }
+	private static SecretKey GenerateSymmetricKey() throws Exception {
+		String jceAlgorithmName = "AES";
+		KeyGenerator keyGenerator = KeyGenerator.getInstance(jceAlgorithmName);
+		keyGenerator.init(128);
+		return keyGenerator.generateKey();
+	}
 
-   private static void storeKeyFile(Key keyEncryptKey)
-      throws IOException
-   {
-      byte[] keyBytes = keyEncryptKey.getEncoded();
-      File keyEncryptKeyFile = new File("keyEncryptKey");
-      FileOutputStream outStream = new FileOutputStream(keyEncryptKeyFile);
-      outStream.write(keyBytes);
-      outStream.close();
+	private static void writeEncryptedDocToFile(Document doc, String fileName)
+			throws Exception {
+		File encryptionFile = new File(fileName);
+		FileOutputStream outStream = new FileOutputStream(encryptionFile);
 
-      System.out.println("Key encryption key stored in: "
-                         + keyEncryptKeyFile.toURL().toString());
-   }
+		TransformerFactory factory = TransformerFactory.newInstance();
+		Transformer transformer = factory.newTransformer();
+		transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+		DOMSource source = new DOMSource(doc);
+		StreamResult result = new StreamResult(outStream);
+		transformer.transform(source, result);
 
-   private static SecretKey GenerateSymmetricKey()
-      throws Exception
-   {
-      String jceAlgorithmName = "AES";
-      KeyGenerator keyGenerator =
-         KeyGenerator.getInstance(jceAlgorithmName);
-      keyGenerator.init(128);
-      return keyGenerator.generateKey();
-   }
+		outStream.close();
 
-   private static void writeEncryptedDocToFile(Document doc,
-                                               String fileName)
-      throws Exception
-   {
-      File encryptionFile = new File(fileName);
-      FileOutputStream outStream =
-         new FileOutputStream(encryptionFile);
+		System.out.println("Encrypted XML document written to: " + encryptionFile.toURL().toString());
+	}
 
-      TransformerFactory factory = TransformerFactory.newInstance();
-      Transformer transformer = factory.newTransformer();
-      transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION,
-                                    "no");
-      DOMSource source = new DOMSource(doc);
-      StreamResult result = new StreamResult(outStream);
-      transformer.transform(source, result);
+	private static void usage() {
+		System.err.println("usage - java EncryptTool " + "infilename outfilename elementtoencrypt");
+		System.err.println("example - java EncryptTool " + "test.xml encrypted.xml CreditCardNumber");
+	}
 
-      outStream.close();
+	public static void main(String args[]) throws Exception {
 
-      System.out.println("Encrypted XML document written to: " +
-                         encryptionFile.toURL().toString());
-   }
+		if (args.length < 2) {
+			usage();
+			System.exit(1);
+		}
 
-   private static void usage()
-   {
-      System.err.println("usage - java EncryptTool "
-                         + "infilename outfilename elementtoencrypt");
-      System.err.println("example - java EncryptTool "
-                         + "test.xml encrypted.xml CreditCardNumber");
-   }
+		Document document = loadBinary(args[0]);
 
-   public static void main(String args[])
-      throws Exception
-   {
-	   
-      if (args.length < 2)
-      {
-         usage();
-         System.exit(1);
-      }
+		// parse file into document
+		// Document document = parseFile(args[0]);
 
-      Document document = loadBinary(args[0]);
-      
-      // parse file into document
-      // Document document = parseFile(args[0]);
+		// generate symmetric key
+		Key symmetricKey = GenerateSymmetricKey();
 
-      // generate symmetric key
-      Key symmetricKey = GenerateSymmetricKey();
+		// Get a key to be used for encrypting the symmetric key
+		Key keyEncryptKey = GenerateKeyEncryptionKey();
 
-      // Get a key to be used for encrypting the symmetric key
-      Key keyEncryptKey = GenerateKeyEncryptionKey();
+		// initialize cipher
+		XMLCipher keyCipher = XMLCipher.getInstance(XMLCipher.RSA_OAEP);
+		keyCipher.init(XMLCipher.WRAP_MODE, keyEncryptKey);
 
-      // Write the key to a file
-      storeKeyFile(keyEncryptKey);
+		// encrypt symmetric key
+		EncryptedKey encryptedKey = keyCipher.encryptKey(document, symmetricKey);
 
-      // initialize cipher
-      XMLCipher keyCipher =
-         XMLCipher.getInstance(XMLCipher.RSA_OAEP);
-      keyCipher.init(XMLCipher.WRAP_MODE, keyEncryptKey);
+		// specify the element to encrypt
+		Element rootElement = document.getDocumentElement();
+		Element elementToEncrypt = rootElement;
+		if (args.length > 2) {
+			elementToEncrypt = (Element) rootElement.getElementsByTagName(args[2]).item(0);
+			if (elementToEncrypt == null) {
+				System.err.println("Unable to find element: " + args[2]);
+				System.exit(1);
+			}
+		}
 
-      // encrypt symmetric key
-      EncryptedKey encryptedKey = keyCipher.encryptKey(document,
-                                                       symmetricKey);
+		// initialize cipher
+		XMLCipher xmlCipher = XMLCipher.getInstance(XMLCipher.AES_128);
+		xmlCipher.init(XMLCipher.ENCRYPT_MODE, symmetricKey);
 
-      // specify the element to encrypt
-      Element rootElement = document.getDocumentElement();
-      Element elementToEncrypt = rootElement;
-      if (args.length > 2)
-      {
-         elementToEncrypt =
-            (Element)rootElement.getElementsByTagName(args[2]).item(0);
-         if (elementToEncrypt == null)
-         {
-            System.err.println("Unable to find element: " + args[2]);
-            System.exit(1);
-         }
-      }
+		// add key info to encrypted data element
+		EncryptedData encryptedDataElement = xmlCipher.getEncryptedData();
+		KeyInfo keyInfo = new KeyInfo(document);
+		keyInfo.add(encryptedKey);
+		encryptedDataElement.setKeyInfo(keyInfo);
 
-      // initialize cipher
-      XMLCipher xmlCipher =
-         XMLCipher.getInstance(XMLCipher.AES_128);
-      xmlCipher.init(XMLCipher.ENCRYPT_MODE, symmetricKey);
+		// do the actual encryption
+		boolean encryptContentsOnly = true;
+		xmlCipher.doFinal(document, elementToEncrypt, encryptContentsOnly);
 
-      // add key info to encrypted data element
-      EncryptedData encryptedDataElement =
-         xmlCipher.getEncryptedData();
-      KeyInfo keyInfo = new KeyInfo(document);
-      keyInfo.add(encryptedKey);
-      encryptedDataElement.setKeyInfo(keyInfo);
+		// write the results to a file
+		writeEncryptedDocToFile(document, args[1]);
+	}
 
-      // do the actual encryption
-      boolean encryptContentsOnly = true;
-      xmlCipher.doFinal(document,
-                        elementToEncrypt,
-                        encryptContentsOnly);
-
-      // write the results to a file
-      writeEncryptedDocToFile(document, args[1]);
-   }
-
-   /**
-    * tworzy z pliku binarnego xml'a postaci
-    * <?xml version="1.0" encoding="UTF-8"?><binary>......</binary>
-    * wartosc binary jest zawartoscia pliku zakodowana w Base64
-    * 
-    * @param string
-    * @return
-    * @throws Exception
-    */
+	/**
+	 * opakownie pliku binarnego w XML
+	 * <?xml version="1.0" encoding="UTF-8"?><binary>......</binary>
+	 * wartosc binary jest zawartoscia pliku zakodowana w Base64
+	 * 
+	 * @param string
+	 * @return
+	 * @throws Exception
+	 */
 	private static Document loadBinary(String string) throws Exception {
 		DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
