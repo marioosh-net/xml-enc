@@ -148,7 +148,7 @@ public class EncryptTool {
 		}
 
 		// initialize cipher
-		XMLCipher xmlCipher = XMLCipher.getInstance(XMLCipher.AES_128);
+		XMLCipher xmlCipher = XMLCipher.getInstance(XMLCipher.AES_256);
 		xmlCipher.init(XMLCipher.ENCRYPT_MODE, symmetricKey);
 
 		// add key info to encrypted data element
